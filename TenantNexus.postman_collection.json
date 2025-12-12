@@ -1,0 +1,232 @@
+{
+	"info": {
+		"_postman_id": "tenantnexus-api-collection",
+		"name": "TenantNexus API",
+		"description": "Multi-tenant organization management service API collection",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Health Check",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:3000/health",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3000",
+					"path": [
+						"health"
+					]
+				},
+				"description": "Check if the server is running"
+			},
+			"response": []
+		},
+		{
+			"name": "Create Organization",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"organization_name\": \"Acme Corp\",\n  \"email\": \"admin@acme.com\",\n  \"password\": \"securepassword123\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:3000/org/create",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3000",
+					"path": [
+						"org",
+						"create"
+					]
+				},
+				"description": "Create a new organization with admin user and dynamic collection"
+			},
+			"response": []
+		},
+		{
+			"name": "Get Organization",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:3000/org/get?organization_name=Acme%20Corp",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3000",
+					"path": [
+						"org",
+						"get"
+					],
+					"query": [
+						{
+							"key": "organization_name",
+							"value": "Acme Corp",
+							"description": "Name of the organization"
+						}
+					]
+				},
+				"description": "Get organization details by name"
+			},
+			"response": []
+		},
+		{
+			"name": "Admin Login",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"if (pm.response.code === 200) {",
+							"    var jsonData = pm.response.json();",
+							"    if (jsonData.data && jsonData.data.token) {",
+							"        pm.environment.set(\"jwt_token\", jsonData.data.token);",
+							"        pm.environment.set(\"organization_id\", jsonData.data.admin.organizationId);",
+							"    }",
+							"}"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"email\": \"admin@acme.com\",\n  \"password\": \"securepassword123\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:3000/admin/login",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3000",
+					"path": [
+						"admin",
+						"login"
+					]
+				},
+				"description": "Authenticate admin and get JWT token. Token is automatically saved to environment variable 'jwt_token'."
+			},
+			"response": []
+		},
+		{
+			"name": "Update Organization",
+			"request": {
+				"method": "PUT",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					},
+					{
+						"key": "Authorization",
+						"value": "Bearer {{jwt_token}}",
+						"description": "JWT token from login (optional but recommended)"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"organization_name\": \"Acme Corp\",\n  \"new_organization_name\": \"Acme Corporation\",\n  \"email\": \"newadmin@acme.com\",\n  \"password\": \"newpassword123\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:3000/org/update",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3000",
+					"path": [
+						"org",
+						"update"
+					]
+				},
+				"description": "Update organization name, admin email, or password. All fields except organization_name are optional."
+			},
+			"response": []
+		},
+		{
+			"name": "Delete Organization",
+			"request": {
+				"method": "DELETE",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{jwt_token}}",
+						"description": "JWT token from login (required)"
+					}
+				],
+				"url": {
+					"raw": "http://localhost:3000/org/delete?organization_name=Acme%20Corp",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3000",
+					"path": [
+						"org",
+						"delete"
+					],
+					"query": [
+						{
+							"key": "organization_name",
+							"value": "Acme Corp",
+							"description": "Name of the organization to delete"
+						}
+					]
+				},
+				"description": "Delete organization and its collection. Requires authentication - only the org's admin can delete."
+			},
+			"response": []
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:3000",
+			"type": "string"
+		},
+		{
+			"key": "jwt_token",
+			"value": "",
+			"type": "string"
+		}
+	]
+}
+
