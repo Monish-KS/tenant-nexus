@@ -1,36 +1,276 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# TenantNexus - Multi-Tenant Organization Management Service
 
-## Getting Started
+A backend service built with Express.js and TypeScript for managing organizations in a multi-tenant architecture. Each organization gets its own MongoDB collection, and the system maintains a master database for global metadata.
 
-First, run the development server:
+## Features
+
+- ✅ Create organizations with dynamic MongoDB collections
+- ✅ Admin user management with JWT authentication
+- ✅ Update organizations (including collection renaming)
+- ✅ Delete organizations (with authentication)
+- ✅ Secure password hashing with bcrypt
+- ✅ Input validation and error handling
+- ✅ Clean, modular architecture
+
+## Tech Stack
+
+- **Express.js** - Web framework
+- **TypeScript** - Type safety
+- **MongoDB + Mongoose** - Database and ODM
+- **JWT** - Authentication
+- **bcryptjs** - Password hashing
+- **express-validator** - Input validation
+
+## Prerequisites
+
+- Node.js (v18 or higher)
+- MongoDB Atlas account (or local MongoDB instance)
+- npm or yarn
+
+## Quick Start
+
+### 1. Clone and Install
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+cd tenantnexus
+npm install
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### 2. Set Up Environment Variables
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Copy the example environment file:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+cp .env.example .env
+```
 
-## Learn More
+Edit `.env` and add your MongoDB connection string:
 
-To learn more about Next.js, take a look at the following resources:
+```env
+MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/database_name
+JWT_SECRET=your-random-secret-key-here
+PORT=3000
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+**Getting MongoDB Atlas Connection String:**
+1. Go to [MongoDB Atlas](https://www.mongodb.com/cloud/atlas)
+2. Create a free cluster (or use existing)
+3. Click "Connect" → "Connect your application"
+4. Copy the connection string
+5. Replace `<password>` with your database user password
+6. Replace `<dbname>` with your database name (e.g., `tenantnexus`)
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+**Generating JWT Secret:**
+```bash
+node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+```
 
-## Deploy on Vercel
+### 3. Run the Server
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+**Development mode (with hot reload):**
+```bash
+npm run dev
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+**Production mode:**
+```bash
+npm run build
+npm start
+```
+
+The server will start on `http://localhost:3000` (or your configured PORT).
+
+## API Endpoints
+
+### Organization Management
+
+#### Create Organization
+```http
+POST /org/create
+Content-Type: application/json
+
+{
+  "organization_name": "Acme Corp",
+  "email": "admin@acme.com",
+  "password": "securepassword123"
+}
+```
+
+#### Get Organization
+```http
+GET /org/get?organization_name=Acme%20Corp
+```
+
+#### Update Organization
+```http
+PUT /org/update
+Content-Type: application/json
+
+{
+  "organization_name": "Acme Corp",
+  "new_organization_name": "Acme Corporation",  // optional
+  "email": "newadmin@acme.com",                 // optional
+  "password": "newpassword123"                  // optional
+}
+```
+
+#### Delete Organization
+```http
+DELETE /org/delete?organization_name=Acme%20Corp
+Authorization: Bearer <jwt_token>
+```
+
+### Authentication
+
+#### Admin Login
+```http
+POST /admin/login
+Content-Type: application/json
+
+{
+  "email": "admin@acme.com",
+  "password": "securepassword123"
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "message": "Login successful",
+  "data": {
+    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+    "admin": {
+      "email": "admin@acme.com",
+      "organizationId": "507f1f77bcf86cd799439011"
+    }
+  }
+}
+```
+
+Use the returned `token` in the `Authorization` header for protected endpoints:
+```
+Authorization: Bearer <token>
+```
+
+### Health Check
+```http
+GET /health
+```
+
+## Project Structure
+
+```
+tenantnexus/
+├── src/
+│   ├── config/
+│   │   └── database.ts          # MongoDB connection
+│   ├── models/
+│   │   ├── Organization.ts      # Organization schema
+│   │   └── Admin.ts             # Admin user schema
+│   ├── controllers/
+│   │   ├── orgController.ts     # Organization CRUD handlers
+│   │   └── authController.ts    # Authentication handlers
+│   ├── routes/
+│   │   ├── orgRoutes.ts         # Organization routes
+│   │   └── authRoutes.ts        # Auth routes
+│   ├── services/
+│   │   ├── orgService.ts        # Business logic
+│   │   └── collectionService.ts # Dynamic collection management
+│   ├── middleware/
+│   │   ├── auth.ts              # JWT authentication
+│   │   └── errorHandler.ts      # Error handling
+│   ├── utils/
+│   │   ├── validation.ts        # Input validation rules
+│   │   └── errors.ts            # Custom error classes
+│   ├── app.ts                   # Express app setup
+│   └── server.ts                # Server entry point
+├── .env.example                 # Environment variables template
+├── package.json
+├── tsconfig.json
+└── README.md
+```
+
+## Architecture
+
+### Database Structure
+
+The system uses a single MongoDB database with:
+
+- **Master Collections:**
+  - `organizations` - Stores organization metadata
+  - `admins` - Stores admin user credentials
+
+- **Dynamic Collections:**
+  - `org_<organization_name>` - One collection per organization
+  - Created automatically when an organization is created
+  - Renamed automatically when organization name changes
+
+### Authentication Flow
+
+1. Admin logs in with email/password
+2. System verifies credentials
+3. Returns JWT token containing:
+   - `adminId` - Admin user ID
+   - `organizationId` - Organization ID
+   - `email` - Admin email
+4. Client includes token in `Authorization: Bearer <token>` header
+5. Protected endpoints verify token and extract org context
+
+## Development
+
+### Scripts
+
+- `npm run dev` - Start development server with hot reload
+- `npm run build` - Compile TypeScript to JavaScript
+- `npm start` - Run production server
+- `npm run lint` - Run ESLint
+
+### Testing the API
+
+You can use tools like:
+- **Postman** - Import the endpoints
+- **curl** - Command line testing
+- **Thunder Client** (VS Code extension)
+- **Insomnia** - API client
+
+Example with curl:
+```bash
+# Create organization
+curl -X POST http://localhost:3000/org/create \
+  -H "Content-Type: application/json" \
+  -d '{"organization_name":"TestOrg","email":"admin@test.com","password":"password123"}'
+
+# Login
+curl -X POST http://localhost:3000/admin/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"admin@test.com","password":"password123"}'
+```
+
+## Notes
+
+- Organization names are case-insensitive and stored in lowercase
+- Collection names are sanitized (spaces → underscores, lowercase)
+- Passwords are hashed with bcrypt (10 rounds)
+- JWT tokens expire after 7 days
+- Only the organization's admin can delete their organization
+
+## Troubleshooting
+
+**Connection Error:**
+- Verify your MongoDB connection string is correct
+- Check if your IP is whitelisted in MongoDB Atlas
+- Ensure database user has proper permissions
+
+**JWT Errors:**
+- Make sure `JWT_SECRET` is set in `.env`
+- Verify token is included in `Authorization` header
+- Check token hasn't expired
+
+**Port Already in Use:**
+- Change `PORT` in `.env` to a different port
+- Or stop the process using port 3000
+
+## License
+
+ISC
