@@ -2,6 +2,8 @@
 
 A backend service built with Express.js and TypeScript for managing organizations in a multi-tenant architecture. Each organization gets its own MongoDB collection, and the system maintains a master database for global metadata.
 
+This is a submission for The Wedding Company
+
 ## Features
 
 - ✅ Create organizations with dynamic MongoDB collections
@@ -270,6 +272,10 @@ curl -X POST http://localhost:3000/admin/login \
 **Port Already in Use:**
 - Change `PORT` in `.env` to a different port
 - Or stop the process using port 3000
+
+## Architecture & Design Considerations
+
+I think this architecture works well for what we're building here. Using a single database with dynamic collections keeps things simple - you just need one connection string and it's easy to replicate. The Express.js setup is clean and modular, so adding new features or scaling horizontally later shouldn't be too painful. The main trade-off is that we don't have the same level of isolation you'd get with separate databases per tenant, but honestly for most use cases this is totally fine. You do need to be careful with collection naming and handle migrations properly when orgs get renamed. If this were going into production with thousands of tenants, I'd probably add Redis for caching, maybe some database sharding, rate limiting per org, and a message queue for those collection migrations. But for this assignment, the current setup hits a nice sweet spot between keeping it simple and having everything work properly.
 
 ## License
 
